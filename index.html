@@ -3,25 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Class Chat</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>MutVibe Chat</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.min.css">
 </head>
 <body>
-  <div class="chat-wrapper">
-    <header class="chat-header">
-      <h2>Class Chat 💬</h2>
-      <p id="user-info"></p>
-    </header>
+  <div class="chat-container">
+    <div class="header">💬 MutVibe Chat</div>
 
-    <div id="chat-box" class="chat-box"></div>
+    <div id="chat-box"></div>
 
-    <div class="chat-input">
-      <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
-      <button id="send-btn">Send</button>
+    <div class="input-area">
+      <input type="file" id="imageInput" accept="image/*" hidden>
+      <button id="emojiBtn">😊</button>
+      <button id="imageBtn">📷</button>
+      <input type="text" id="message" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
     </div>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <emoji-picker id="emojiPicker" style="display:none;"></emoji-picker>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js" type="module"></script>
+  <script src="script.js" type="module"></script>
 </body>
 </html>
