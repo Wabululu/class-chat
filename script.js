@@ -1,64 +1,105 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// ✅ Your Firebase config
+// Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyC8MO_cr9atswaMiUhVkf35E2U6wcO7whw",
-  authDomain: "classchat-623f7.firebaseapp.com",
-  projectId: "classchat-623f7",
-  storageBucket: "classchat-623f7.firebasestorage.app",
-  messagingSenderId: "321893895637",
-  appId: "1:321893895637:web:5b19d9e5324fb66b3bc15c"
+  apiKey: "AIzaSyATrOxvYhh_QTyYhs7MdNyBO6fnQml_czw",
+  authDomain: "mutvibe-chat.firebaseapp.com",
+  projectId: "mutvibe-chat",
+  storageBucket: "mutvibe-chat.firebasestorage.app",
+  messagingSenderId: "683154678453",
+  appId: "1:683154678453:web:afeae8469eecaff88214fc"
 };
 
-// Initialize Firebase
+// Init Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-// References
-const chatBox = document.getElementById("chat-box");
-const input = document.getElementById("message-input");
-const sendBtn = document.getElementById("send-btn");
-const messagesRef = collection(db, "messages");
-
-// Get username
-let username = localStorage.getItem("username");
+// Username
+let username = localStorage.getItem("mutvibe_username");
 if (!username) {
   username = prompt("Enter your name:");
-  localStorage.setItem("username", username);
+  localStorage.setItem("mutvibe_username", username || "Anonymous");
 }
-document.getElementById("user-info").textContent = `Logged in as: ${username}`;
 
-// Send message
-sendBtn.addEventListener("click", async () => {
-  const text = input.value.trim();
-  if (!text) return;
+const chatBox = document.getElementById("chat-box");
+const sendBtn = document.getElementById("sendBtn");
+const msgInput = document.getElementById("message");
+const emojiBtn = document.getElementById("emojiBtn");
+const emojiPicker = document.getElementById("emojiPicker");
+const imageBtn = document.getElementById("imageBtn");
+const imageInput = document.getElementById("imageInput");
 
-  await addDoc(messagesRef, {
-    name: username,
-    text: text,
-    createdAt: Date.now()
-  });
-
-  input.value = "";
+emojiBtn.addEventListener("click", () => {
+  emojiPicker.style.display = emojiPicker.style.display === "none" ? "block" : "none";
 });
 
-// Listen for realtime updates
-const q = query(messagesRef, orderBy("createdAt"));
+emojiPicker.addEventListener("emoji-click", (e) => {
+  msgInput.value += e.detail.unicode;
+});
+
+sendBtn.addEventListener("click", sendMessage);
+msgInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+imageBtn.addEventListener("click", () => imageInput.click());
+imageInput.addEventListener("change", uploadImage);
+
+async function uploadImage() {
+  const file = imageInput.files[0];
+  if (!file) return;
+
+  const fileRef = ref(storage, `images/${Date.now()}_${file.name}`);
+  await uploadBytes(fileRef, file);
+  const imageUrl = await getDownloadURL(fileRef);
+
+  await addDoc(collection(db, "messages"), {
+    username,
+    imageUrl,
+    timestamp: serverTimestamp()
+  });
+}
+
+async function sendMessage() {
+  const message = msgInput.value.trim();
+  if (message) {
+    await addDoc(collection(db, "messages"), {
+      username,
+      message,
+      timestamp: serverTimestamp()
+    });
+    msgInput.value = "";
+  }
+}
+
+// Real-time messages
+const q = query(collection(db, "messages"), orderBy("timestamp"));
 onSnapshot(q, (snapshot) => {
   chatBox.innerHTML = "";
   snapshot.forEach((doc) => {
     const data = doc.data();
-    const messageDiv = document.createElement("div");
-    const time = new Date(data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.classList.add(data.username === username ? "sent" : "received");
 
-    messageDiv.classList.add("message");
-    messageDiv.classList.add(data.name === username ? "sent" : "received");
-    messageDiv.innerHTML = `
-      <strong>${data.name}</strong><br>${data.text}
-      <div class="timestamp">${time}</div>
-    `;
-    chatBox.appendChild(messageDiv);
+    let content = `<b>${data.username}</b><br>`;
+    if (data.message) content += `${data.message}`;
+    if (data.imageUrl) content += `<br><img src="${data.imageUrl}" alt="Image">`;
+    content += `<div class="time">${formatTime(data.timestamp?.toDate())}</div>`;
+
+    div.innerHTML = content;
+    chatBox.appendChild(div);
   });
   chatBox.scrollTop = chatBox.scrollHeight;
 });
+
+function formatTime(date) {
+  if (!date) return "";
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
